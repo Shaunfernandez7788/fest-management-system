@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #f3ec78, #af4261);
+      transition: background 0.5s, color 0.5s;
+    }
+
+    body.dark-theme {
+      background: #121212;
+      color: #f0f0f0;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: flex-end;
+      padding: 15px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+    }
+
+    .nav-button {
+      margin-left: 10px;
+      background-color: #ffffff22;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+
+    .nav-button:hover {
+      background-color: #ffffff55;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+
+    .section-title {
+      font-size: 28px;
+      margin-top: 40px;
+      color: #222;
+    }
+
+    body.dark-theme .section-title {
+      color: #fff;
+    }
+
+    .user-list, .event-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .card {
+      width: 250px;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 15px;
+      border-radius: 12px;
+      text-align: left;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .event-form {
+      margin: 20px 0;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      width: 100%;
+      max-width: 800px;
+      align-items: center;
+    }
+
+    .form-grid input,
+    .form-grid button {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    .add-btn {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .add-btn:hover {
+      background-color: #0056b3;
+    }
+
+    body.dark-theme .container {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    body.dark-theme .card {
+      background: rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+<body class="light-theme">
+
+  <div class="navbar">
+    <a href="index.html" class="nav-button">Home</a>
+    <a href="event.html" class="nav-button">Events</a>
+    <a href="admin.html" class="nav-button">Admin</a>
+    <button onclick="promptDeleteUser()" class="nav-button">Delete User</button>
+    <button onclick="promptDeleteEvent()" class="nav-button">Delete Event</button>
+    <button id="toggle-theme" class="nav-button">🌙</button>
+  </div>
+
+  <div class="container">
+    <h1>Admin Dashboard</h1>
+
+    <h2 class="section-title">Registered Users</h2>
+    <div id="user-list" class="user-list"></div>
+
+    <h2 class="section-title">Manage Events</h2>
+
+    <!-- Add New Event -->
+    <h3>Create a New Event</h3>
+    <form id="eventForm" class="event-form" onsubmit="addNewEvent(event)">
+      <div class="form-grid">
+        <input type="text" id="eventName" placeholder="Event Name" required />
+        <input type="date" id="eventDate" required />
+        <input type="time" id="eventTime" required />
+        <input type="text" id="eventLocation" placeholder="Location" required />
+        <button type="submit" class="add-btn">➕ Add Event</button>
+      </div>
+    </form>
+
+    <!-- Display Events -->
+    <div id="event-list" class="event-list"></div>
+  </div>
+
+  <script>
+    document.getElementById("toggle-theme").addEventListener("click", () => {
+      document.body.classList.toggle("dark-theme");
+      document.body.classList.toggle("light-theme");
+    });
+
+    window.onload = async function () {
+      loadUsers();
+      loadEvents();
+    };
+
+    async function loadUsers() {
+      try {
+        const res = await fetch('/admin/users');
+        const users = await res.json();
+        const userList = document.getElementById('user-list');
+
+        userList.innerHTML = users.length === 0 ? "<p>No users registered yet.</p>" : "";
+        users.forEach(user => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <p><strong>Name:</strong> ${user.name}</p>
+            <p><strong>Email:</strong> ${user.email}</p>
+            <p><strong>Phone:</strong> ${user.phone}</p>
+            <p><strong>Event:</strong> ${user.event}</p>
+          `;
+          userList.appendChild(card);
+        });
+      } catch (err) {
+        console.error(err);
+        document.getElementById('user-list').innerHTML = "<p>Error loading users.</p>";
+      }
+    }
+
+    async function loadEvents() {
+      try {
+        const res = await fetch('/admin/events');
+        const events = await res.json();
+        const eventList = document.getElementById('event-list');
+
+        eventList.innerHTML = events.length === 0 ? "<p>No events created yet.</p>" : "";
+        events.forEach(event => {
+          const formattedDate = new Date(event.date).toISOString().split('T')[0];
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <p><strong>Event:</strong> ${event.name}</p>
+            <p><strong>Date:</strong> ${formattedDate}</p>
+            <p><strong>Time:</strong> ${event.time}</p>
+            <p><strong>Location:</strong> ${event.location}</p>
+          `;
+          eventList.appendChild(card);
+        });
+      } catch (err) {
+        console.error(err);
+        document.getElementById('event-list').innerHTML = "<p>Error loading events.</p>";
+      }
+    }
+
+    function promptDeleteUser() {
+      const name = prompt("Enter the name of the user to delete:");
+      if (!name) return;
+
+      fetch('/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.message);
+        loadUsers();
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Failed to delete user.");
+      });
+    }
+
+    function promptDeleteEvent() {
+      const name = prompt("Enter the event name to delete:");
+      if (!name) return;
+
+      fetch('/admin/delete-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.message);
+        loadEvents();
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Failed to delete event.");
+      });
+    }
+
+    function addNewEvent(e) {
+      e.preventDefault();
+      const name = document.getElementById('eventName').value;
+      const date = document.getElementById('eventDate').value;
+      const time = document.getElementById('eventTime').value;
+      const location = document.getElementById('eventLocation').value;
+
+      if (!name || !date || !time || !location) {
+        alert('All fields are required');
+        return;
+      }
+
+      fetch('/admin/add-event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name, date, time, location })
+      })
+      .then(response => response.json())
+      .then(data => {
+        alert(data.message);
+        loadEvents();
+        document.getElementById('eventForm').reset();
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Something went wrong');
+      });
+    }
+  </script>
+</body>
+</html>

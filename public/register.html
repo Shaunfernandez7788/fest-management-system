@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>User Registration</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="light-theme"> <!-- You can toggle to dark-theme if needed -->
+
+  <div class="navbar">
+    <div class="nav-right">
+      <a href="index.html" class="nav-button">Home</a>
+      <a href="event.html" class="nav-button">Events</a>
+      <a href="admin.html" class="nav-button">Admin</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <h2>Register for an Event</h2>
+    <form id="registration-form" class="form">
+      <input type="text" name="name" placeholder="Name" required />
+      <input type="email" name="email" placeholder="Email" required />
+      <input type="tel" name="phone" placeholder="Phone" required />
+      <label>Event Date: <input type="date" name="date" required /></label>
+      <label>Event Time: <input type="time" name="time" required /></label>
+      <input type="text" name="event" id="eventInput" placeholder="Event Name" required />
+      <button type="submit">Register</button>
+    </form>
+  </div>
+
+  <script>
+  // Ensure form fields are prefilled from query parameters
+  window.onload = () => {
+    const params = new URLSearchParams(window.location.search);
+    const eventName = params.get("event");
+    const date = params.get("date");
+    const time = params.get("time");
+
+    if (eventName) {
+      document.querySelector("input[name='event']").value = eventName;
+    }
+    if (date) {
+      document.querySelector("input[name='date']").value = date;
+    }
+    if (time) {
+      document.querySelector("input[name='time']").value = time;
+    }
+  };
+
+  document.getElementById("registration-form").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const data = {
+      name: formData.get("name"),
+      email: formData.get("email"),
+      phone: formData.get("phone"),
+      date: formData.get("date"),
+      time: formData.get("time"),
+      event: formData.get("event")
+    };
+
+    try {
+      const res = await fetch("/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (res.ok) {
+        alert("Registration successful!");
+        this.reset();
+      } else {
+        alert("Registration failed.");
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      alert("An error occurred.");
+    }
+  });
+</script>
+</body>
+</html>

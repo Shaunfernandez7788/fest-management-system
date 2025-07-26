@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fest Management System</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .register-event-btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 24px;
+      font-size: 18px;
+      color: #fff;
+      background: linear-gradient(45deg, #ff4e50, #f9d423);
+      border: none;
+      border-radius: 30px;
+      text-decoration: none;
+      font-weight: bold;
+      box-shadow: 0 0 15px rgba(255, 78, 80, 0.6);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      animation: pulse 1.5s infinite;
+    }
+
+    .register-event-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(255, 78, 80, 0.9);
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 15px rgba(255, 78, 80, 0.6); }
+      50% { box-shadow: 0 0 25px rgba(255, 78, 80, 1); }
+      100% { box-shadow: 0 0 15px rgba(255, 78, 80, 0.6); }
+    }
+  </style>
+</head>
+<body class="home-page">
+  <div class="navbar">
+    <a href="index.html" class="nav-button">Home</a>
+    <a href="event.html" class="nav-button">Events</a>
+    <a href="admin.html" class="nav-button">Admin</a>
+  </div>
+
+  <div class="container">
+    <h1>Welcome to Fest Management System</h1>
+    <p>Explore, register, and celebrate the joy of events with ease.</p>
+
+    <!-- ✅ Flashy Register Event Button -->
+    <a href="event.html" class="register-event-btn">Register Event</a>
+  </div>
+</body>
+</html>
