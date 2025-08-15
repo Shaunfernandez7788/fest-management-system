@@ -2,29 +2,26 @@ const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
 const session = require('express-session');
-const db = require('./db');
+const db = require('./db'); // Ensure db.js uses process.env vars
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000; // ✅ Allow Render to set port
 
 // Middleware
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(session({
-  secret: 'festSecretKey',
+  secret: process.env.SESSION_SECRET || 'festSecretKey', // ✅ Use env var if available
   resave: false,
   saveUninitialized: true
 }));
 
 // Routes
-
-// Serve admin page
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// User registration
 app.post('/register', (req, res) => {
   const { name, email, phone, event, date, time } = req.body;
   const query = 'INSERT INTO users (name, email, phone, event, event_date, event_time) VALUES (?, ?, ?, ?, ?, ?)';
@@ -37,7 +34,6 @@ app.post('/register', (req, res) => {
   });
 });
 
-// Admin login
 app.post('/admin/login', (req, res) => {
   const { username, password } = req.body;
   const query = 'SELECT * FROM admin WHERE username = ?';
@@ -55,7 +51,6 @@ app.post('/admin/login', (req, res) => {
   });
 });
 
-// Admin fetch users
 app.get('/admin/users', (req, res) => {
   if (!req.session.admin) return res.status(403).send('Unauthorized');
   db.query('SELECT * FROM users', (err, results) => {
@@ -64,7 +59,6 @@ app.get('/admin/users', (req, res) => {
   });
 });
 
-// Admin delete user
 app.post('/admin/delete-user', (req, res) => {
   if (!req.session.admin) return res.status(403).json({ message: 'Unauthorized' });
   const { name } = req.body;
@@ -79,7 +73,6 @@ app.post('/admin/delete-user', (req, res) => {
   });
 });
 
-// Admin fetch events
 app.get('/admin/events', (req, res) => {
   if (!req.session.admin) return res.status(403).json({ message: 'Unauthorized' });
   db.query('SELECT * FROM events', (err, results) => {
@@ -88,7 +81,6 @@ app.get('/admin/events', (req, res) => {
   });
 });
 
-// Admin add event
 app.post('/admin/add-event', (req, res) => {
   const { name, date, time, location } = req.body;
   if (!name || !date || !time || !location) {
@@ -105,7 +97,6 @@ app.post('/admin/add-event', (req, res) => {
   });
 });
 
-// Admin delete event
 app.post('/admin/delete-event', (req, res) => {
   if (!req.session.admin) return res.status(403).json({ message: 'Unauthorized' });
 
@@ -119,7 +110,6 @@ app.post('/admin/delete-event', (req, res) => {
   });
 });
 
-// ✅ Updated Events list for users
 app.get('/events', (req, res) => {
   const query = `
     SELECT 
@@ -138,7 +128,7 @@ app.get('/events', (req, res) => {
   });
 });
 
-// Start server
+// ✅ Start server for Render
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
 });

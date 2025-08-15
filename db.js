@@ -1,20 +1,18 @@
-// db.js
 const mysql = require('mysql2');
 require('dotenv').config();
 
-// Create MySQL connection
 const connection = mysql.createConnection({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASS || '',
-  database: process.env.DB_NAME || 'festdb'
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT // For Railway
 });
 
-// Connect and handle errors
 connection.connect((err) => {
   if (err) {
     console.error('❌ Failed to connect to MySQL:', err.message);
-    process.exit(1); // Exit the app if DB connection fails
+    process.exit(1);
   }
   console.log(`✅ Connected to MySQL database "${process.env.DB_NAME}" as "${process.env.DB_USER}"`);
 });
