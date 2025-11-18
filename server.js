@@ -1,29 +1,24 @@
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
-const bcrypt = require('bcrypt'); // ADDED for password security
 const db = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// --- Middleware ---
-// CHANGED: Use modern express methods instead of body-parser
+// Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static('public')); // Serve files from the 'public' directory
+app.use(express.static('public'));
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'a-much-stronger-secret-key',
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: process.env.NODE_ENV === 'production' } // Recommended for production
+  cookie: { secure: process.env.NODE_ENV === 'production' }
 }));
 
-
-// --- Routes ---
-
-// ADDED: Homepage route
+// Homepage
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -32,12 +27,16 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// User registration
+// Register user
 app.post('/register', (req, res) => {
   const { name, email, phone, event, date, time } = req.body;
-  // FIXED: Explicitly map request body to the correct database columns
-  const query = 'INSERT INTO users (name, email, phone, event_name, event_date, event_time) VALUES (?, ?, ?, ?, ?, ?)';
-  db.query(query, [name, email, phone, event, date, time], (err) => {
+
+  const query = `
+    INSERT INTO users (name, email, phone, event, timestamp)
+    VALUES (?, ?, ?, ?, NOW())
+  `;
+
+  db.query(query, [name, email, phone, event], (err) => {
     if (err) {
       console.error('Error registering user:', err);
       return res.status(500).send('Error registering user');
@@ -49,36 +48,31 @@ app.post('/register', (req, res) => {
 // Admin login
 app.post('/admin/login', (req, res) => {
   const { username, password } = req.body;
-  const query = 'SELECT * FROM admin WHERE username = ?';
-  db.query(query, [username], (err, results) => {
+
+  db.query('SELECT * FROM admin WHERE username = ?', [username], (err, results) => {
     if (err || results.length === 0) {
-      // CHANGED: Generic error message to prevent user enumeration
       return res.status(401).send('Invalid username or password');
     }
 
     const admin = results[0];
-    
-    // CHANGED: Securely compare hashed password
-    bcrypt.compare(password, admin.password, (err, isMatch) => {
-      if (isMatch) {
-        req.session.admin = admin.username;
-        res.redirect('/dashboard.html');
-      } else {
-        res.status(401).send('Invalid username or password');
-      }
-    });
+
+    // Plain-text password comparison (Option 2)
+    if (password === admin.password) {
+      req.session.admin = admin.username;
+      return res.redirect('/dashboard.html');
+    }
+
+    res.status(401).send('Invalid username or password');
   });
 });
 
-// Middleware to protect admin routes
+// Admin session middleware
 const isAdmin = (req, res, next) => {
-  if (req.session.admin) {
-    return next();
-  }
+  if (req.session.admin) return next();
   res.status(403).json({ message: 'Unauthorized' });
 };
 
-// Admin routes (now protected)
+// Fetch users
 app.get('/admin/users', isAdmin, (req, res) => {
   db.query('SELECT * FROM users', (err, results) => {
     if (err) return res.status(500).send('Error fetching users');
@@ -86,33 +80,38 @@ app.get('/admin/users', isAdmin, (req, res) => {
   });
 });
 
+// Delete user
 app.post('/admin/delete-user', isAdmin, (req, res) => {
   const { name } = req.body;
-  if (!name) return res.status(400).json({ message: 'Name is required' });
 
   db.query('DELETE FROM users WHERE name = ?', [name], (err, result) => {
     if (err) return res.status(500).json({ message: 'Error deleting user' });
-    if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
+
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: 'User not found' });
+
     res.json({ message: 'User deleted successfully' });
   });
 });
 
+// Fetch events
 app.get('/admin/events', isAdmin, (req, res) => {
   db.query('SELECT * FROM events', (err, results) => {
-    if (err) return res.status(500).json({ message: 'Error fetching events' });
+    if (err) return res.status(500).send('Error fetching events');
     res.json(results);
   });
 });
 
+// Add event
 app.post('/admin/add-event', isAdmin, (req, res) => {
-  const { name, date, time, description } = req.body;
-  if (!name || !date || !time || !description) {
-    return res.status(400).json({ message: 'All fields are required' });
-  }
+  const { name, date, time, location } = req.body;
 
-  // FIXED: Query uses correct column names
-  const query = 'INSERT INTO events (event_name, event_date, event_time, description) VALUES (?, ?, ?, ?)';
-  db.query(query, [name.trim(), date, time, description.trim()], (err) => {
+  const query = `
+    INSERT INTO events (name, date, time, location)
+    VALUES (?, ?, ?, ?)
+  `;
+
+  db.query(query, [name, date, time, location], (err) => {
     if (err) {
       console.error('Error adding event:', err);
       return res.status(500).json({ message: 'Failed to add event' });
@@ -121,28 +120,23 @@ app.post('/admin/add-event', isAdmin, (req, res) => {
   });
 });
 
+// Delete event
 app.post('/admin/delete-event', isAdmin, (req, res) => {
   const { name } = req.body;
-  // FIXED: Query uses correct column names
-  db.query('DELETE FROM events WHERE event_name = ?', [name], (err, result) => {
+
+  db.query('DELETE FROM events WHERE name = ?', [name], (err, result) => {
     if (err) return res.status(500).json({ message: 'Failed to delete event' });
-    if (result.affectedRows === 0) return res.status(404).json({ message: 'Event not found' });
+
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: 'Event not found' });
+
     res.json({ message: 'Event deleted successfully' });
   });
 });
 
-// Public route to get events
+// Public fetch events
 app.get('/events', (req, res) => {
-  // This query was already correct from our last discussion
-  const query = `
-    SELECT 
-      event_name AS name, 
-      DATE_FORMAT(event_date, "%Y-%m-%d") AS date, 
-      TIME_FORMAT(event_time, "%H:%i") AS time, 
-      description AS location 
-    FROM events
-  `;
-  db.query(query, (err, results) => {
+  db.query('SELECT * FROM events', (err, results) => {
     if (err) {
       console.error("Error fetching events:", err);
       return res.status(500).json({ message: "Internal Server Error" });
@@ -151,8 +145,7 @@ app.get('/events', (req, res) => {
   });
 });
 
-
-// Start the server
+// Start server
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
 });
