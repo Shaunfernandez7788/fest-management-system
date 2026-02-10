@@ -29,7 +29,7 @@ app.get('/admin', (req, res) => {
 
 // Register user
 app.post('/register', (req, res) => {
-  const { name, email, phone, event, date, time } = req.body;
+  const { name, email, phone, event } = req.body;
 
   const query = `
     INSERT INTO users (name, email, phone, event, timestamp)
@@ -56,7 +56,6 @@ app.post('/admin/login', (req, res) => {
 
     const admin = results[0];
 
-    // Plain-text password comparison (Option 2)
     if (password === admin.password) {
       req.session.admin = admin.username;
       return res.redirect('/dashboard.html');
@@ -108,7 +107,7 @@ app.post('/admin/add-event', isAdmin, (req, res) => {
 
   const query = `
     INSERT INTO events (name, date, time, location)
-    VALUES (?, ?, ?, ?)
+    VALUES (?, ?, ?)
   `;
 
   db.query(query, [name, date, time, location], (err) => {
@@ -145,7 +144,11 @@ app.get('/events', (req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`✅ Server running at http://localhost:${PORT}`);
-});
+// --- CHANGES FOR VERCEL ---
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`✅ Server running at http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
